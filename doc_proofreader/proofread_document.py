@@ -72,7 +72,9 @@ def docx_to_chunks(file_path, chunk_size):
                 current_paragraph += "<i>" + text + "</i>"
             else:
                 current_paragraph += text
-        current_paragraph += "  \n"  # Add a newline after each paragraph for readability
+        current_paragraph += (
+            "  \n"  # Add a newline after each paragraph for readability
+        )
         current_chunk += current_paragraph
 
         # Check if the current paragraph is too long and chunk it if necessary
