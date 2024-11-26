@@ -9,7 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 from doc_proofreader.prompts.system_prompts import DEFAULT_SYSTEM_PROMPT
-from doc_proofreader.prompts.user_prompts import USER_PROMPT_1, USER_PROMPT_3
+from doc_proofreader.prompts.user_prompts import USER_PROMPT
 
 load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -36,7 +36,7 @@ def docx_to_formatted_text(file_path):
     return formatted_text
 
 
-def chunk_text(text, chunk_size=4000):  # 12000
+def chunk_text(text, chunk_size=2000):  # 12000
     # This function is aware of the HTML-like tags to avoid splitting them.
     # TODO(caerulex): Don't split up a sentence between two chunks.
     chunks = []
@@ -53,12 +53,48 @@ def chunk_text(text, chunk_size=4000):  # 12000
     return chunks
 
 
+def docx_to_chunks(file_path, chunk_size):
+    doc = Document(file_path)
+
+    chunks = []
+    current_paragraph = ""
+    current_chunk = ""
+
+    for para in doc.paragraphs:
+        current_paragraph = ""
+        for run in para.runs:
+            text = run.text
+            if run.bold and run.italic:
+                current_paragraph += "<b><i>" + text + "</i></b>"
+            elif run.bold:
+                current_paragraph += "<b>" + text + "</b>"
+            elif run.italic:
+                current_paragraph += "<i>" + text + "</i>"
+            else:
+                current_paragraph += text
+        current_paragraph += (
+            "  \n"  # Add a newline after each paragraph for readability
+        )
+        current_chunk += current_paragraph
+
+        # Check if the current paragraph is too long and chunk it if necessary
+        if len(current_chunk) > chunk_size:  # Adjust the chunk size as needed
+            # If the paragraph is not too long, append it to the list
+            chunks.append(current_chunk)
+            current_chunk = ""
+
+    # Add the remainder that is smaller than the chunk size.
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks
+
+
 def process_chunk_with_gpt4(chunk: str, additional_instructions: str):
     print("Processing chunk...")
     messages = [
         {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
-        {"role": "user", "content": USER_PROMPT_1},
-        {"role": "user", "content": USER_PROMPT_3},
+        {"role": "user", "content": USER_PROMPT},
         {"role": "user", "content": chunk},
     ]
     if additional_instructions:
@@ -66,8 +102,8 @@ def process_chunk_with_gpt4(chunk: str, additional_instructions: str):
 
     response = client.chat.completions.create(
         messages=messages,
-        model="gpt-4-1106-preview",
-        temperature=0.6,
+        model="gpt-4o",
+        temperature=0.2,
         # max_tokens=1200,
     )
     result = response.choices[0].message.content.strip()
@@ -107,9 +143,8 @@ def proofread_document(
     additional_instructions: str = "",
     save_outputs: bool = True,
     save_dir: str = "",
-):
-    formatted_text = docx_to_formatted_text(document_path)
-    chunks = chunk_text(formatted_text)
+) -> str:
+    chunks = docx_to_chunks(document_path, 4000)
     aggregated_output = aggregate_outputs(
         [process_chunk_with_gpt4(chunk, additional_instructions) for chunk in chunks]
     )
