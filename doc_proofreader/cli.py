@@ -11,4 +11,8 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("file_path", metavar="file-path")
 parser.add_argument("--additional-instructions", type=str, default="")
-parser.add_argument("--inline", action='store_true', help="If True, will create a word doc with inline edits. Otherwise outputs a list of corrections for review.")
+parser.add_argument(
+    "--inline",
+    action="store_true",
+    help="If True, will create a word doc with inline edits. Otherwise outputs a list of corrections for review.",
+)
