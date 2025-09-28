@@ -13,14 +13,32 @@ OUTPUT_DIR = Path(Path(__file__).parent.parent, "proofread_files")
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    # Display model information if provider/model specified
+    if args.provider or args.model:
+        from doc_proofreader.llm.client_factory import ClientFactory
+        client = ClientFactory.create_client(provider=args.provider, model_name=args.model)
+        model_info = client.get_model_info()
+        print(f"Using {model_info['name']} via {model_info['provider']}")
+
     print("Processing ", args.file_path, args.inline, args.additional_instructions)
     if args.inline:
         print("Editing document inline...")
         proofread_document_with_track_changes_mac(
-            args.file_path, args.additional_instructions, save_dir=OUTPUT_DIR
+            args.file_path,
+            args.additional_instructions,
+            save_dir=OUTPUT_DIR,
+            provider=args.provider,
+            model=args.model,
+            estimate_cost=args.estimate_cost,
         )
     else:
         print("Editing document...")
         proofread_document(
-            args.file_path, args.additional_instructions, save_dir=OUTPUT_DIR
+            args.file_path,
+            args.additional_instructions,
+            save_dir=OUTPUT_DIR,
+            provider=args.provider,
+            model=args.model,
+            estimate_cost=args.estimate_cost,
         )

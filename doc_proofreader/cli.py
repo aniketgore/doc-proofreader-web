@@ -3,6 +3,7 @@
 """CLI setup."""
 
 import argparse
+from doc_proofreader.llm.client_factory import ClientFactory
 
 parser = argparse.ArgumentParser(
     prog="Doc-Proofreader",
@@ -15,4 +16,22 @@ parser.add_argument(
     "--inline",
     action="store_true",
     help="If True, will create a word doc with inline edits. Otherwise outputs a list of corrections for review.",
+)
+parser.add_argument(
+    "--provider",
+    type=str,
+    default=None,
+    choices=["openai", "openrouter"],
+    help="LLM provider to use (default: uses LLM_PROVIDER env var or 'openai')",
+)
+parser.add_argument(
+    "--model",
+    type=str,
+    default=None,
+    help=f"Model to use for proofreading. Available models: {', '.join(ClientFactory.get_available_models())}",
+)
+parser.add_argument(
+    "--estimate-cost",
+    action="store_true",
+    help="Estimate the cost before processing the document",
 )

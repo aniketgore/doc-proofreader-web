@@ -2,7 +2,6 @@
 
 """Main entrypoint of doc-proofreader."""
 
-from openai import OpenAI
 from datetime import datetime
 from docx import Document
 from pathlib import Path
@@ -10,10 +9,9 @@ from dotenv import load_dotenv
 import os
 from doc_proofreader.prompts.system_prompts import DEFAULT_SYSTEM_PROMPT
 from doc_proofreader.prompts.user_prompts import USER_PROMPT
+from doc_proofreader.llm.client_factory import ClientFactory
 
 load_dotenv()
-API_KEY = os.getenv("OPENAI_API_KEY", "")
-client = OpenAI(api_key=API_KEY)
 
 
 def docx_to_formatted_text(file_path):
@@ -90,7 +88,9 @@ def docx_to_chunks(file_path, chunk_size):
     return chunks
 
 
-def process_chunk_with_gpt4(chunk: str, additional_instructions: str):
+def process_chunk_with_llm(
+    chunk: str, additional_instructions: str, client, model: str = None
+):
     print("Processing chunk...")
     messages = [
         {"role": "system", "content": DEFAULT_SYSTEM_PROMPT},
@@ -100,13 +100,11 @@ def process_chunk_with_gpt4(chunk: str, additional_instructions: str):
     if additional_instructions:
         messages.insert(2, {"role": "user", "content": additional_instructions})
 
-    response = client.chat.completions.create(
+    result = client.create_completion(
         messages=messages,
-        model="gpt-4o",
+        model=model,
         temperature=0.2,
-        # max_tokens=1200,
     )
-    result = response.choices[0].message.content.strip()
     if result.strip() == "No errors were found.":
         result = ""
     print(result)
@@ -143,10 +141,33 @@ def proofread_document(
     additional_instructions: str = "",
     save_outputs: bool = True,
     save_dir: str = "",
+    provider: str = None,
+    model: str = None,
+    estimate_cost: bool = False,
 ) -> str:
-    chunks = docx_to_chunks(document_path, 4000)
+    # Create LLM client
+    client = ClientFactory.create_client(provider=provider, model_name=model)
+
+    # Get document content and estimate cost if requested
+    if estimate_cost:
+        doc_content = docx_to_formatted_text(document_path)
+        cost = client.estimate_cost(doc_content)
+        model_info = client.get_model_info()
+        print(f"\n📊 Cost Estimation:")
+        print(f"  Model: {model_info['name']} ({model_info['provider']})")
+        print(f"  Estimated cost: ${cost:.4f}")
+        print(f"  Context window: {model_info['context_window']:,} tokens")
+        response = input("\nProceed with proofreading? (y/n): ")
+        if response.lower() != 'y':
+            print("Proofreading cancelled.")
+            return ""
+
+    chunks = docx_to_chunks(document_path, 27500)  # ~5000 words
     aggregated_output = aggregate_outputs(
-        [process_chunk_with_gpt4(chunk, additional_instructions) for chunk in chunks]
+        [
+            process_chunk_with_llm(chunk, additional_instructions, client, model)
+            for chunk in chunks
+        ]
     )
 
     # Save the results to a text file

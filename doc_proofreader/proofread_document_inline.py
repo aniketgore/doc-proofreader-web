@@ -7,7 +7,6 @@ currently supported. Instead, users can manually run a "Compare Documents" in
 Microsoft Word to see track changes between original and corrected documents.
 """
 
-from openai import OpenAI
 from datetime import datetime
 from docx import Document
 from pathlib import Path
@@ -17,10 +16,9 @@ import re
 import sys
 import subprocess
 from doc_proofreader.prompts.system_prompts import DIRECT_EDIT_SYSTEM_PROMPT
+from doc_proofreader.llm.client_factory import ClientFactory
 
 load_dotenv()
-API_KEY = os.getenv("OPENAI_API_KEY", "")
-client = OpenAI(api_key=API_KEY)
 SUPPORTED_OS = ["darwin"]
 
 
@@ -36,7 +34,9 @@ def clear_all_paragraphs(document):
         paragraph._p = paragraph._element = None
 
 
-def process_chunk_for_direct_edit(chunk: str, additional_instructions: str):
+def process_chunk_for_direct_edit(
+    chunk: str, additional_instructions: str, client, model: str = None
+):
     """Process chunk and return corrected text directly."""
     print("Processing chunk for inline edits...")
 
@@ -54,13 +54,11 @@ def process_chunk_for_direct_edit(chunk: str, additional_instructions: str):
             },
         )
 
-    response = client.chat.completions.create(
+    return client.create_completion(
         messages=messages,
-        model="gpt-4o",
+        model=model,
         temperature=0.1,
     )
-
-    return response.choices[0].message.content.strip()
 
 
 def create_corrected_document_from_chunks(
@@ -176,20 +174,44 @@ def proofread_document_with_track_changes_mac(
     document_path: str,
     additional_instructions: str = "",
     save_dir: str = "",
+    provider: str = None,
+    model: str = None,
+    estimate_cost: bool = False,
 ) -> str:
     """Main function to proofread document and create track changes version on Mac."""
 
     print(f"Processing document: {document_path}")
 
+    # Create LLM client
+    client = ClientFactory.create_client(provider=provider, model_name=model)
+
+    # Get document content and estimate cost if requested
+    if estimate_cost:
+        # Read document to estimate cost
+        doc = Document(document_path)
+        doc_text = "\n".join([para.text for para in doc.paragraphs])
+        cost = client.estimate_cost(doc_text)
+        model_info = client.get_model_info()
+        print(f"\n📊 Cost Estimation:")
+        print(f"  Model: {model_info['name']} ({model_info['provider']})")
+        print(f"  Estimated cost: ${cost:.4f}")
+        print(f"  Context window: {model_info['context_window']:,} tokens")
+        response = input("\nProceed with proofreading? (y/n): ")
+        if response.lower() != 'y':
+            print("Proofreading cancelled.")
+            return ""
+
     # Use existing chunking function
-    original_chunks = docx_to_chunks(document_path, 4000)
+    original_chunks = docx_to_chunks(document_path, 27500)  # ~5000 words
     print(f"Document split into {len(original_chunks)} chunks")
 
     # Process each chunk
     corrected_chunks = []
     for i, chunk in enumerate(original_chunks):
         print(f"Processing chunk {i+1}/{len(original_chunks)}")
-        corrected_text = process_chunk_for_direct_edit(chunk, additional_instructions)
+        corrected_text = process_chunk_for_direct_edit(
+            chunk, additional_instructions, client, model
+        )
         corrected_chunks.append(corrected_text)
 
     # Create corrected document
@@ -230,7 +252,7 @@ def proofread_document_with_track_changes_mac(
 
 # Integration with your existing code structure
 def docx_to_chunks(file_path, chunk_size):
-    """Your existing chunking function - keeping it unchanged."""
+    """Chunk document into manageable pieces. Default chunk_size=27500 chars (~5000 words)."""
     doc = Document(file_path)
 
     chunks = []
@@ -255,7 +277,7 @@ def docx_to_chunks(file_path, chunk_size):
         current_chunk += current_paragraph
 
         # Check if the current paragraph is too long and chunk it if necessary
-        if len(current_chunk) > chunk_size:  # Adjust the chunk size as needed
+        if len(current_chunk) > chunk_size:  # Default: 27500 chars (~5000 words)
             # If the paragraph is not too long, append it to the list
             chunks.append(current_chunk)
             current_chunk = ""

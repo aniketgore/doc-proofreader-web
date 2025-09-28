@@ -1,6 +1,6 @@
 # Doc-Proofreader
 
-A simple document proofreading tool that utilizes OpenAI's GPT-4o model.
+A powerful document proofreading tool that utilizes various LLM models including Google Gemini 2.5 Pro (2M context window!), OpenAI GPT, Anthropic Claude, and more via direct API or OpenRouter integration.
 
 ## Setting Up
 
@@ -35,22 +35,30 @@ Navigate to your project folder in the command line and run:
 pip install .
 ```
 
-### 5. Store your GPT token
+### 5. Store your API tokens
 
-Store your GPT token by putting it in a file OR adding it to your environment variables.
+Store your API tokens by putting them in a file OR adding them to your environment variables. You can use either OpenAI directly or OpenRouter for access to multiple models.
 
 #### Method 1. Store in a File (recommended method)
 
 This option is probably the simplest for beginners!
 
 - Create a file called `.env` within the project folder
-- Add `OPENAI_API_KEY=your_api_key_here` to the file. Don't forget to save!
+- Add your API keys to the file. Don't forget to save!
 
-If you're running on macOS/Linux, the following two lines will create the file and add the token to it:
+**For OpenAI (default):**
 ```bash
-touch ./doc_proofreader/.env
-echo 'OPENAI_API_KEY="your_api_key_here"' >> ./doc_proofreader/.env
+OPENAI_API_KEY=your_openai_api_key_here
 ```
+
+**For OpenRouter (access to multiple models):**
+```bash
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+LLM_PROVIDER=openrouter
+MODEL_NAME=gemini-2.5-pro  # default, or any supported model
+```
+
+See `.env.example` for all available configuration options.
 
 #### Method 2. Add the key to the environment variables
 
@@ -66,7 +74,7 @@ export OPENAI_API_KEY="YourAPIKeyHere"
 
 **B. Add to system or user environment variables (permanent). You only need to do this once.**
 
-**Windows:** Press the Windows key. Search your applications for "Environment Variables". Add the GPT token as an environment variable.
+**Windows:** Press the Windows key. Search your applications for "Environment Variables". Add your API tokens as environment variables.
 
 **MacOS:** Edit the `~/.zshrc` file. Add the line:
 
@@ -88,13 +96,46 @@ source ~/.bashrc
 
 ## Usage
 
-Run using this command:
+### Basic Usage
 
+**Default with OpenAI (GPT-4o):**
 ```bash
 python -m doc_proofreader "path to your docx file"
 ```
 
-You can pass additional information/instructions to GPT-4, custom to your document, following this example:
+**Default with OpenRouter (Gemini 2.5 Pro - Recommended!):**
+```bash
+python -m doc_proofreader "path to your docx file" --provider openrouter
+```
+
+### Using Different Models
+
+**Claude 3.5 Sonnet via OpenRouter:**
+```bash
+python -m doc_proofreader "path to your docx file" --provider openrouter --model claude-3.5-sonnet
+```
+
+**Gemini 2.5 Pro (2M context - handles entire books!):**
+```bash
+python -m doc_proofreader "path to your docx file" --provider openrouter --model gemini-2.5-pro
+# Note: This is the default when using --provider openrouter
+```
+
+**GPT-4o Mini (cheaper option):**
+```bash
+python -m doc_proofreader "path to your docx file" --model gpt-4o-mini
+```
+
+### Cost Estimation
+
+Estimate the cost before processing:
+```bash
+python -m doc_proofreader "path to your docx file" --estimate-cost
+```
+
+### Custom Instructions
+
+You can pass additional information/instructions to the model, custom to your document, following this example:
 
 ```bash
 python -m doc_proofreader "path to your docx file" --additional-instructions "your custom instructions"
@@ -117,6 +158,28 @@ python -m doc_proofreader "path to your docx file" --inline
 This option will output a document with all changes. On Mac, it will also automatically attempt to create a track changes document to see clearly all modifications for easy review.
 
 The inline option is currently not compatible with custom instructions.
+
+## Available Models
+
+### Via OpenAI (default provider):
+- `gpt-4o` - Most capable, balanced cost (default)
+- `gpt-4o-mini` - Faster, cheaper alternative
+- `gpt-4` - Previous generation
+- `gpt-3.5-turbo` - Fastest, most economical
+
+### Via OpenRouter:
+- **OpenAI Models:** All OpenAI models listed above
+- **Google Gemini:**
+  - `gemini-2.5-pro` - **RECOMMENDED: Massive 2M token context window!** (default for OpenRouter)
+  - `gemini-1.5-pro` - Large context window (1M tokens)
+  - `gemini-1.5-flash` - Faster Gemini option
+- **Anthropic Claude:**
+  - `claude-3.5-sonnet` - Best for nuanced editing
+  - `claude-3-opus` - Most capable Claude model
+  - `claude-3-haiku` - Fast and economical
+- **Open Models:**
+  - `llama-3.1-70b` - Open source alternative
+  - `mixtral-8x7b` - Efficient mixture of experts model
 
 ## Common Issues and Solutions
 
