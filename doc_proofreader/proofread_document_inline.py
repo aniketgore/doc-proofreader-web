@@ -1,6 +1,11 @@
 # Copyright caerulex 2025
 
-"""Mac-compatible doc-proofreader with inline track changes using AppleScript."""
+"""Doc-proofreader with inline corrections.
+
+Outputs document with track changes on Mac platforms. Windows/Linux not
+currently supported. Instead, users can manually run a "Compare Documents" in
+Microsoft Word to see track changes between original and corrected documents.
+"""
 
 from openai import OpenAI
 from datetime import datetime
@@ -8,6 +13,7 @@ from docx import Document
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import re
 import sys
 import subprocess
 from doc_proofreader.prompts.system_prompts import DIRECT_EDIT_SYSTEM_PROMPT
@@ -32,7 +38,7 @@ def clear_all_paragraphs(document):
 
 def process_chunk_for_direct_edit(chunk: str, additional_instructions: str):
     """Process chunk and return corrected text directly."""
-    print("Processing chunk for direct edit...")
+    print("Processing chunk for inline edits...")
 
     messages = [
         {"role": "system", "content": DIRECT_EDIT_SYSTEM_PROMPT},
@@ -97,8 +103,6 @@ def create_corrected_document_from_chunks(
 
 def apply_formatted_text_to_paragraph(paragraph, formatted_text):
     """Apply formatted text with HTML-like tags to a paragraph."""
-    import re
-
     # Clear existing runs
     paragraph.clear()
 
