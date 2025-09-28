@@ -175,12 +175,6 @@ def proofread_document_with_track_changes_mac(
 ) -> str:
     """Main function to proofread document and create track changes version on Mac."""
 
-    if sys.platform not in SUPPORTED_OS:
-        raise NotImplementedError(
-            f"This application does not support running on '{sys.platform}'. "
-            "Supported operating systems are: {', '.join(SUPPORTED_OS)}."
-        )
-
     print(f"Processing document: {document_path}")
 
     # Use existing chunking function
@@ -215,10 +209,17 @@ def proofread_document_with_track_changes_mac(
     print(f"Corrected document saved: {corrected_path}")
 
     print("🔄 Attempting to create track changes document...")
-    compare_documents_with_applescript(
-        document_path,
-        corrected_path,
-    )
+    if sys.platform not in SUPPORTED_OS:
+        print(
+            "This application does not support track changes output on "
+            f"'{sys.platform}'. Supported operating systems are: "
+            f"{', '.join(SUPPORTED_OS)}."
+        )
+    else:
+        compare_documents_with_applescript(
+            document_path,
+            corrected_path,
+        )
 
     return str(corrected_path)
 
