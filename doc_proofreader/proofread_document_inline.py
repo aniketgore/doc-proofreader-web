@@ -80,10 +80,9 @@ def create_corrected_document_from_chunks(
 
                     # Copy paragraph style
                     try:
-                        print(f"Copied para style to be {original_para.style}")
                         new_para.style = original_para.style
-                    except Exception as e:
-                        print(f"Couldn't copy para style -- {e}")
+                    except Exception:
+                        pass
 
                     # Parse and apply formatting
                     apply_formatted_text_to_paragraph(new_para, corrected_line)
