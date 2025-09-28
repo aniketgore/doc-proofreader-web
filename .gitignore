@@ -159,3 +159,5 @@ cython_debug/
 # Custom
 *.txt
 proofread_files/
+.vscode/
+.DS_Store
