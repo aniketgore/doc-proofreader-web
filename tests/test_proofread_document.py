@@ -1,6 +1,6 @@
 # Copyright caerulex 2024
 
-"""Main entrypoint of doc-proofreader."""
+"""Tests for primary doc proofreader."""
 
 from doc_proofreader.proofread_document import proofread_document
 from pathlib import Path
