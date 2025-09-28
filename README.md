@@ -1,6 +1,6 @@
 # Doc-Proofreader
 
-A simple document proofreading tool that utilizes OpenAI's GPT-4 model.
+A simple document proofreading tool that utilizes OpenAI's GPT-4o model.
 
 ## Setting Up
 
@@ -107,6 +107,16 @@ You should be able to run this example as-is:
 ```bash
 python -m doc_proofreader "./tests/resources/test_doc.docx" --additional-instructions '"half elf" should not be corrected to "half-elf".'
 ```
+
+There is also an inline option where the app will directly proofread your input file.
+
+```bash
+python -m doc_proofreader "path to your docx file" --inline
+```
+
+This option will output a document with all changes. On Mac, it will also automatically attempt to create a track changes document to see clearly all modifications for easy review.
+
+The inline option is currently not compatible with custom instructions.
 
 ## Common Issues and Solutions
 
