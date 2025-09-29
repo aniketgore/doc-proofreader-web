@@ -12,6 +12,12 @@ class OpenRouterClient(BaseClient):
 
     # Model mappings and pricing (as of 2025)
     MODEL_INFO = {
+        "gpt-5-mini": {
+            "openrouter_name": "openai/gpt-5-mini",
+            "context_window": 400000,
+            "cost_per_1k_input": 0.0001,
+            "cost_per_1k_output": 0.0004,
+        },
         "gemini-2.5-pro": {
             "openrouter_name": "google/gemini-2.5-pro",
             "context_window": 1000000,

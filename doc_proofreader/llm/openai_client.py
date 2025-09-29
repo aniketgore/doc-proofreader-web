@@ -12,6 +12,11 @@ class OpenAIClient(BaseClient):
 
     # Model information and pricing (as of 2025)
     MODEL_INFO = {
+        "gpt-5-mini": {
+            "context_window": 400000,
+            "cost_per_1k_input": 0.0001,
+            "cost_per_1k_output": 0.0004,
+        },
         "gpt-4o": {
             "context_window": 128000,
             "cost_per_1k_input": 0.0025,

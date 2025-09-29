@@ -133,6 +133,39 @@ Estimate the cost before processing:
 python -m doc_proofreader "path to your docx file" --estimate-cost
 ```
 
+### Advanced Chunking Options
+
+**Auto-optimize chunks for your model:**
+```bash
+python -m doc_proofreader "document.docx" --chunk auto
+# Automatically sets optimal chunk size based on model's context window
+```
+
+**Custom chunk sizes:**
+```bash
+# Process in 10,000 word chunks (great for large documents)
+python -m doc_proofreader "document.docx" --chunk 10000w
+
+# Process in 50,000 character chunks
+python -m doc_proofreader "document.docx" --chunk 50000c
+
+# Small chunks for precise control
+python -m doc_proofreader "document.docx" --chunk 2000w
+```
+
+### Performance Features
+
+**Parallel Processing** (automatic for multiple chunks):
+- Processes multiple chunks simultaneously
+- 3x faster for large documents
+- Maintains order and quality
+
+**Example with Gemini 2.5 Pro + Auto Chunking:**
+```bash
+# Best performance: entire 50K word document in 1 chunk!
+python -m doc_proofreader "large_document.docx" --provider openrouter --chunk auto
+```
+
 ### Custom Instructions
 
 You can pass additional information/instructions to the model, custom to your document, following this example:
@@ -158,6 +191,26 @@ python -m doc_proofreader "path to your docx file" --inline
 This option will output a document with all changes. On Mac, it will also automatically attempt to create a track changes document to see clearly all modifications for easy review.
 
 The inline option is currently not compatible with custom instructions.
+
+## Chunking Strategy Guide
+
+### Recommended Chunk Sizes by Use Case:
+
+| Use Case | Chunk Size | Example | Best For |
+|----------|------------|---------|----------|
+| **Speed** | `--chunk auto` | Entire doc in 1-2 chunks | Large docs, Gemini 2.5 Pro |
+| **Balance** | `--chunk 10000w` | 10K words | Most documents |
+| **Precision** | `--chunk 3000w` | 3K words | Complex docs, careful review |
+| **Conservative** | `--chunk 15000c` | 15K characters | Older models, safety |
+
+### Model-Specific Recommendations:
+
+| Model | Optimal Chunk | Max Document Size |
+|-------|---------------|-------------------|
+| **Gemini 2.5 Pro** | `auto` (200K chars) | Entire novels |
+| **Claude 3.5 Sonnet** | `auto` (100K chars) | Long articles |
+| **GPT-4o** | `auto` (80K chars) | Standard docs |
+| **GPT-3.5** | `5000w` | Smaller docs |
 
 ## Available Models
 

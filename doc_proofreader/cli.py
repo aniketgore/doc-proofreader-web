@@ -35,3 +35,9 @@ parser.add_argument(
     action="store_true",
     help="Estimate the cost before processing the document",
 )
+parser.add_argument(
+    "--chunk",
+    type=str,
+    default=None,
+    help="Custom chunk size: number + unit (e.g., '10000w' for 10K words, '50000c' for 50K chars, 'auto' for model-optimized)",
+)

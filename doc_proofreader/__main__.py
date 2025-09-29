@@ -31,6 +31,7 @@ if __name__ == "__main__":
             provider=args.provider,
             model=args.model,
             estimate_cost=args.estimate_cost,
+            chunk_size_arg=args.chunk,
         )
     else:
         print("Editing document...")
@@ -41,4 +42,5 @@ if __name__ == "__main__":
             provider=args.provider,
             model=args.model,
             estimate_cost=args.estimate_cost,
+            chunk_size_arg=args.chunk,
         )

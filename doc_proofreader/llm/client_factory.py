@@ -37,11 +37,8 @@ class ClientFactory:
 
         # Determine model
         if model_name is None:
-            # Default to gemini-2.5-pro for OpenRouter, gpt-4o for OpenAI
-            if provider == "openrouter":
-                model_name = os.getenv("MODEL_NAME", "gemini-2.5-pro")
-            else:
-                model_name = os.getenv("MODEL_NAME", "gpt-4o")
+            # Default to gpt-5-mini (cheap with large context)
+            model_name = os.getenv("MODEL_NAME", "gpt-5-mini")
 
         # Get appropriate API key
         if api_key is None:

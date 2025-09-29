@@ -15,8 +15,11 @@ import os
 import re
 import sys
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from doc_proofreader.prompts.system_prompts import DIRECT_EDIT_SYSTEM_PROMPT
 from doc_proofreader.llm.client_factory import ClientFactory
+from doc_proofreader.chunk_utils import parse_chunk_size, get_optimal_chunk_size, validate_chunk_size
 
 load_dotenv()
 SUPPORTED_OS = ["darwin"]
@@ -35,10 +38,11 @@ def clear_all_paragraphs(document):
 
 
 def process_chunk_for_direct_edit(
-    chunk: str, additional_instructions: str, client, model: str = None
+    chunk: str, additional_instructions: str, client, model: str = None, chunk_index: int = 0
 ):
     """Process chunk and return corrected text directly."""
-    print("Processing chunk for inline edits...")
+    thread_id = threading.current_thread().ident
+    print(f"Processing chunk {chunk_index + 1} for inline edits (thread {thread_id})...")
 
     messages = [
         {"role": "system", "content": DIRECT_EDIT_SYSTEM_PROMPT},
@@ -54,11 +58,13 @@ def process_chunk_for_direct_edit(
             },
         )
 
-    return client.create_completion(
+    result = client.create_completion(
         messages=messages,
         model=model,
         temperature=0.1,
     )
+    print(f"✅ Chunk {chunk_index + 1} inline processing completed")
+    return result
 
 
 def create_corrected_document_from_chunks(
@@ -177,6 +183,9 @@ def proofread_document_with_track_changes_mac(
     provider: str = None,
     model: str = None,
     estimate_cost: bool = False,
+    chunk_size_arg: str = None,
+    parallel: bool = True,
+    max_workers: int = 3,
 ) -> str:
     """Main function to proofread document and create track changes version on Mac."""
 
@@ -184,6 +193,23 @@ def proofread_document_with_track_changes_mac(
 
     # Create LLM client
     client = ClientFactory.create_client(provider=provider, model_name=model)
+    model_info = client.get_model_info()
+
+    # Determine chunk size
+    if chunk_size_arg:
+        if chunk_size_arg.lower() == 'auto':
+            chunk_size = get_optimal_chunk_size(model_info['name'], model_info['context_window'])
+            print(f"🤖 Auto chunk size: {chunk_size:,} chars (~{chunk_size//5.5:.0f} words) for {model_info['name']}")
+        else:
+            chunk_size = parse_chunk_size(chunk_size_arg)
+            is_valid, warning = validate_chunk_size(chunk_size, model_info['name'], model_info['context_window'])
+            if not is_valid:
+                print(f"❌ {warning}")
+                return ""
+            if warning:
+                print(warning)
+    else:
+        chunk_size = 27500  # Default 5000 words
 
     # Get document content and estimate cost if requested
     if estimate_cost:
@@ -191,28 +217,57 @@ def proofread_document_with_track_changes_mac(
         doc = Document(document_path)
         doc_text = "\n".join([para.text for para in doc.paragraphs])
         cost = client.estimate_cost(doc_text)
-        model_info = client.get_model_info()
         print(f"\n📊 Cost Estimation:")
         print(f"  Model: {model_info['name']} ({model_info['provider']})")
         print(f"  Estimated cost: ${cost:.4f}")
         print(f"  Context window: {model_info['context_window']:,} tokens")
+        print(f"  Chunk size: {chunk_size:,} chars (~{chunk_size//5.5:.0f} words)")
         response = input("\nProceed with proofreading? (y/n): ")
         if response.lower() != 'y':
             print("Proofreading cancelled.")
             return ""
 
     # Use existing chunking function
-    original_chunks = docx_to_chunks(document_path, 27500)  # ~5000 words
+    original_chunks = docx_to_chunks(document_path, chunk_size)
     print(f"Document split into {len(original_chunks)} chunks")
 
+    print(f"📄 Document split into {len(original_chunks)} chunks")
+    print(f"⚡ Processing {'in parallel' if parallel and len(original_chunks) > 1 else 'sequentially'}...")
+
     # Process each chunk
-    corrected_chunks = []
-    for i, chunk in enumerate(original_chunks):
-        print(f"Processing chunk {i+1}/{len(original_chunks)}")
-        corrected_text = process_chunk_for_direct_edit(
-            chunk, additional_instructions, client, model
-        )
-        corrected_chunks.append(corrected_text)
+    if parallel and len(original_chunks) > 1:
+        # Parallel processing
+        corrected_chunks = [None] * len(original_chunks)  # Preserve order
+        with ThreadPoolExecutor(max_workers=min(max_workers, len(original_chunks))) as executor:
+            # Submit all chunks
+            future_to_index = {
+                executor.submit(
+                    process_chunk_for_direct_edit,
+                    original_chunks[i],
+                    additional_instructions,
+                    ClientFactory.create_client(provider=provider, model_name=model),  # Fresh client per thread
+                    model,
+                    i
+                ): i for i in range(len(original_chunks))
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    corrected_chunks[index] = future.result()
+                except Exception as exc:
+                    print(f"❌ Chunk {index + 1} generated an exception: {exc}")
+                    corrected_chunks[index] = original_chunks[index]  # Fallback to original
+    else:
+        # Sequential processing
+        corrected_chunks = []
+        for i, chunk in enumerate(original_chunks):
+            print(f"Processing chunk {i+1}/{len(original_chunks)}")
+            corrected_text = process_chunk_for_direct_edit(
+                chunk, additional_instructions, client, model, i
+            )
+            corrected_chunks.append(corrected_text)
 
     # Create corrected document
     corrected_doc = create_corrected_document_from_chunks(
