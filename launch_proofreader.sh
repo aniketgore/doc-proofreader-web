@@ -4,8 +4,6 @@
 # This script automatically starts the Doc Proofreader Streamlit app
 # Compatible with macOS and Linux
 
-set -e  # Exit on error
-
 # Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -42,15 +40,20 @@ activate_venv() {
 
     echo -e "${YELLOW}⚠️  No virtual environment found${NC}"
     echo -e "${YELLOW}   Using system Python installation${NC}"
-    return 1
+    return 0  # Changed to return 0 to not trigger exit
 }
 
 # Function to check if streamlit is installed
 check_streamlit() {
-    if ! command -v streamlit &> /dev/null; then
+    # Check if streamlit is importable via Python
+    if ! python3 -c "import streamlit" &> /dev/null; then
         echo -e "${RED}❌ Streamlit is not installed${NC}"
         echo -e "${YELLOW}   Installing Streamlit...${NC}"
-        pip install streamlit
+        pip3 install --user streamlit || {
+            echo -e "${RED}❌ Failed to install Streamlit${NC}"
+            echo -e "${YELLOW}   Please manually run: pip3 install streamlit${NC}"
+            exit 1
+        }
     fi
 }
 
@@ -96,7 +99,7 @@ echo -e "${BLUE}🚀 Starting Streamlit app...${NC}"
 echo ""
 
 # Start streamlit in the background
-streamlit run streamlit_app.py --server.headless true &
+python3 -m streamlit run streamlit_app.py --server.headless true &
 STREAMLIT_PID=$!
 
 # Wait for the server to start
