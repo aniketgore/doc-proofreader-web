@@ -1,3 +1,5 @@
+
+
 # Doc-Proofreader
 
 A powerful document proofreading tool that utilizes various LLM models including Google Gemini 2.5 Pro (2M context window!), OpenAI GPT, Anthropic Claude, and more via direct API or OpenRouter integration.
@@ -297,4 +299,4 @@ The inline option is currently not compatible with custom instructions.
 
 ## Contact
 
-If you need help or want to report a bug, please DM caerulex on discord.
+

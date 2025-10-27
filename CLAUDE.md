@@ -97,5 +97,3 @@ python -m doc_proofreader "path/to/document.docx" --inline
 ## Current Branch
 You're currently on the `edit-inline-feature` branch, which appears to be working on improvements to the inline editing functionality.
 
-## Contact
-Maintainer: caerulex (Discord)
