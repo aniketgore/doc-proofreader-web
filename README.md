@@ -94,6 +94,50 @@ source ~/.zshrc
 source ~/.bashrc
 ```
 
+### 6. Install Streamlit (for GUI - optional)
+
+If you want to use the graphical interface:
+
+```bash
+pip install streamlit
+```
+
+## Quick Start (GUI)
+
+### Easy Launcher (macOS/Linux)
+
+The easiest way to run the GUI is using the launcher script:
+
+```bash
+./launch_proofreader.sh
+```
+
+**Features:**
+- 🚀 Automatically activates virtual environment
+- 🌐 Opens your browser to the app
+- 🛑 Handles cleanup when you press Ctrl+C
+- ✨ No manual commands needed!
+
+**First time setup:**
+1. Make sure the script is executable: `chmod +x launch_proofreader.sh`
+2. Run it: `./launch_proofreader.sh`
+3. The app will open in your browser at http://localhost:8501
+
+**Alternative manual launch:**
+```bash
+streamlit run streamlit_app.py
+```
+
+### Streamlit GUI Features
+
+The web interface provides:
+- 📤 Easy file upload via drag-and-drop
+- 🎛️ Visual model and provider selection
+- 📋 Two modes: List corrections or inline editing
+- 📝 Custom instructions input
+- 💾 One-click download of results
+- 📊 Progress tracking and status updates
+
 ## Usage
 
 ### Basic Usage

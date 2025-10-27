@@ -207,6 +207,6 @@ else:
 # Footer
 st.divider()
 st.markdown(
-    "<center>Made with ❤️ using Streamlit | Doc Proofreader v0.4.0</center>",
+    "<center>Made with ❤️ using Streamlit | Doc Proofreader v1.2.0</center>",
     unsafe_allow_html=True
 )
